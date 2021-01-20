@@ -41,8 +41,9 @@
         <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" />
         <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" />
 
+	<!--name属性用来定义节点运行的名称。pkg定义节点所在的功能包名称，type定义节点的可执行文件名称，这两个属性等同于在终端中使用rosrun命令执行节点时的输入参数-->
         <node 
-            name="uav_tracking" pkg="uav_tracking" type="uav_tracking" output="screen">
+            name="control_test" pkg="uav_tracking" type="control_test" output="screen">
             <param name="mav_name" type="string" value="$(arg mav_name)"/>
             </node>  
     </group>

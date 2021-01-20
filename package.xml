@@ -2,7 +2,7 @@
 <package format="2">
   <name>uav_tracking</name>
   <version>0.0.0</version>
-  <description>The control package</description>
+  <description>The tracking package</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
   <!-- Example:  -->

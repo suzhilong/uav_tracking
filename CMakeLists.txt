@@ -33,5 +33,5 @@ include_directories(
 )
 
 
-add_executable(uav_tracking src/uav_tracking.cpp)
-target_link_libraries(uav_tracking ${catkin_LIBRARIES})
+add_executable(control_test src/control_test.cpp)
+target_link_libraries(control_test ${catkin_LIBRARIES})
