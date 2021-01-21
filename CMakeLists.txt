@@ -35,3 +35,6 @@ include_directories(
 
 add_executable(control_test src/control_test.cpp)
 target_link_libraries(control_test ${catkin_LIBRARIES})
+
+add_executable(video_record src/video_record.cpp)
+target_link_libraries(video_record ${catkin_LIBRARIES})

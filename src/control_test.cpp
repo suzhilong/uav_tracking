@@ -182,6 +182,7 @@
     }
 
     int main(int argc, char** argv) {
+        ROS_INFO("video record is running...");
         ros::init(argc, argv, "UAV_Controler");
         ros::NodeHandle nh;
         // Create a private node handle for accessing node parameters.
@@ -238,6 +239,7 @@
             }
             else if(flag_take_off_OK && flag_tasks_OK<path.size())
             {
+                // ROS_INFO("UAV navigation is running...");
                 if(flag_tasks_OK<path.size())
                 {
 
