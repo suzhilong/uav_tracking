@@ -1,5 +1,6 @@
 <launch>
   <arg name="mav_name" default="firefly"/>
+  <!-- "tracking_scen" need be changed to your own world_name -->
   <arg name="world_name" default="tracking_scen"/>
   <arg name="enable_logging" default="false" />
   <arg name="enable_ground_truth" default="true" />

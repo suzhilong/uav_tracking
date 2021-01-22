@@ -16,7 +16,7 @@ geometry_msgs::PointStamped current_position;
 
 float MAX_ERROR = 0.3; //与目标点的最大误差距离，因为数据有误差，所以需要根据运动尺度设置合适的值
 float HEIGHT = 2; //飞机起飞高度
-float linear_smoothing_navigation_step = 2;
+float linear_smoothing_navigation_step = 0.5; //数字越大导航速度越快
 bool flag_gps_initialized_OK = false;
 bool flag_take_off_OK = false;
 int flag_tasks_OK = 0;
@@ -234,9 +234,11 @@ int main(int argc, char** argv) {
     std::vector<Eigen::Vector3d> path;
     path.push_back(Eigen::Vector3d(0.f,2.f,2.f));
     path.push_back(Eigen::Vector3d(0.f,-2.f,3.f));
-    path.push_back(Eigen::Vector3d(5.f,-2.f,4.f));
-    path.push_back(Eigen::Vector3d(5.f,2.f,2.f));
-    path.push_back(Eigen::Vector3d(0.f,2.f,1.f));
+    path.push_back(Eigen::Vector3d(2.f,-2.f,4.f));
+    path.push_back(Eigen::Vector3d(2.f,2.f,4.f));
+    path.push_back(Eigen::Vector3d(2.f,3.f,3.f));
+    path.push_back(Eigen::Vector3d(1.f,2.f,2.f));
+    path.push_back(Eigen::Vector3d(1.f,-2.f,2.f));
     std::cout << path.size() << std::endl;
 
     ros::Rate loop_rate(10);
@@ -252,19 +254,15 @@ int main(int argc, char** argv) {
             // ROS_INFO("UAV navigation task is running...");
             if(flag_tasks_OK<path.size())
             {
-
                 bool temp = linearSmoothingNavigationTask(path[flag_tasks_OK]);
                 if (temp)
                     flag_tasks_OK ++;
             }
-            else //循环
-            {
-                flag_tasks_OK = 0;
-            }
         }
         else if(flag_tasks_OK >= path.size())
         {
-            gohome();
+            flag_tasks_OK = 0;
+            // gohome();
         }
 
         ros::spinOnce();
