@@ -241,7 +241,7 @@ int main(int argc, char** argv) {
     path.push_back(Eigen::Vector3d(1.f,-2.f,2.f));
     std::cout << path.size() << std::endl;
 
-    ros::Rate loop_rate(10);
+    ros::Rate loop_rate(20);
     while (ros::ok())
     { 
         if(flag_gps_initialized_OK && !flag_take_off_OK)
