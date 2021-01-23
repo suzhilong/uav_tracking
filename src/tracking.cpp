@@ -10,8 +10,10 @@
 #include <mav_msgs/conversions.h>
 #include <mav_msgs/default_topics.h>
 #include <trajectory_msgs/MultiDOFJointTrajectory.h>
+#include "std_msgs/UInt16MultiArray.h"
+#include "std_msgs/MultiArrayDimension.h"
 
-#include "pch.h"
+// #include "pch.h"
 #include <opencv2/opencv.hpp>
 #include <opencv2/tracking.hpp>
 #include <opencv2/core/ocl.hpp>
@@ -44,7 +46,9 @@ void trackingTarget(const sensor_msgs::Image&);
 
 
 bool isFirstFrame = true;
-cv::Rect2d bbox(0, 0, 0, 0);
+cv::Rect2d boundingBox(0, 0, 0, 0);
+cv::Mat curFrame; //图片
+bool DisplayTracking = true; //是否可视化跟踪
 
 int main(int argc, char** argv) {
     // ROS_INFO("video record is running...");
@@ -58,11 +62,12 @@ int main(int argc, char** argv) {
 
     // 订阅话题
     position_sub = nh.subscribe(std::string("/"+uav_name+"/odometry_sensor1/position").c_str(), 10, &updateUavPosition);
-    video_left_sub = nh.subscribe(std::string("/"+uav_name+"/vi_sensor/left/image_raw").c_str(), 10, &trackingTarget);
+    video_left_sub = nh.subscribe(std::string("/"+uav_name+"/vi_sensor/left/image_raw").c_str(), 10, &updateFrame);
     // video_right_sub = nh.subscribe(std::string("/"+uav_name+"/vi_sensor/right/image_raw").c_str(), 10, &trackingTarget);
 
     // 发布话题 xxx_pub = nh.advertise<msg type>([topic], [Hz]);
-    target_pub = nh.advertise<std::pair<int, int> >("/uav_tracking/target_point", 10);
+    trajectory_pub = nh.advertise<trajectory_msgs::MultiDOFJointTrajectory>(mav_msgs::default_topics::COMMAND_TRAJECTORY, 10);
+    target_pub = nh.advertise<std_msgs::UInt16MultiArray >("/uav_tracking/target_point", 10);
 
     
     if (trackerType == "BOOSTING")
@@ -84,11 +89,11 @@ int main(int argc, char** argv) {
     ros::Rate loop_rate(10);
     while (ros::ok())
     {
-        
-        
-
+        cout << "ros::ok begin---------" << endl;
+        trackingTarget();
 
         ros::spinOnce();
+        cout << "ros::ok end---------" << endl;
         loop_rate.sleep();
     }
 
@@ -118,6 +123,22 @@ void updateUavPosition(const geometry_msgs::PointStamped& msg)
     }
     current_position = msg;
     // std::cout<<"UAV current position is: "<<msg.point.x<< msg.point.y<< msg.point.z<<std::endl;
+}
+
+/*
+Description: 
+    updateFrame(const sensor_msgs::Image& inputImg)
+    camera数据更新的回调函数.
+
+Parameters:
+    inputImg 图片
+
+Return:
+    无
+*/
+void updateFrame(const sensor_msgs::Image& inputImg)
+{
+    curFrame = inputImg;
 }
 
 /*
@@ -208,64 +229,84 @@ bool linearSmoothingNavigationTask(const Eigen::Vector3d& target)
     return false;
 }
 
+
 /*
 Description: 
-    trackingTarget(const sensor_msgs::Image& inputImg)
+    trackingTarget()
     追踪目标在图片中的位置
 
 Parameters:
-    inputImg 输入的图片
+    无
 
 Return:
     无
 */
-void trackingTarget(const sensor_msgs::Image& inputImg){
-    cv::Mat curFrame = inputImg;
-    
+void trackingTarget()
+{
+    cout << "-----trackingTarget bagin -----------" << endl;
     if(isFirstFrame)
     {
-        // 第一帧初始检测框的坐标
-        bbox[0] = 0;
-        bbox[1] = 0;
-        bbox[2] = 100;
-        bbox[3] = 100;
+        // 如果第一帧，初始化
+
+        // 初始化检测框的坐标
+        boundingBox[0] = 0;
+        boundingBox[1] = 0;
+        boundingBox[2] = 100;
+        boundingBox[3] = 100;
 
         // Display bounding box
-        rectangle(curFrame, bbox, Scalar(255, 0, 0), 2, 1);
-        imshow("Tracking", curFrame);
+        cv::rectangle(curFrame, boundingBox, Scalar(255, 0, 0), 2, 1);
+        cv::imshow("Tracking", curFrame);
 
-        //跟踪器初始化
-        tracker->init(curFrame, bbox);
+        //初始化跟踪器
+        tracker->init(curFrame, boundingBox);
 
         isFirstFrame = false;
     }
-    // Start timer 开始计时
+
+    // Start timer
     double timer = (double)getTickCount();
-    // Update the tracking result 更新跟踪器算法
-    bool ok = tracker->update(curFrame, bbox);
-    // Calculate Frames per second (FPS) 计算FPS
+    // Update the tracking result
+    // curFrame: current frame
+    // boundingBox:	The bounding box that represent the new target location, 
+    // if true was returned, not modified otherwise
+    bool ok = tracker->update(curFrame, boundingBox);
+    // Calculate Frames per second (FPS)
     float fps = getTickFrequency() / ((double)getTickCount() - timer);
 
-    if (ok)
+    if (DisplayTracking)
     {
-        // Tracking success : Draw the tracked object 如果跟踪到目标画框
-        rectangle(curFrame, bbox, Scalar(255, 0, 0), 2, 1);
-        //pub目标点
-        
+        cout << "----------displayTracking bagin -----------" << endl;
+        if (ok)
+        {
+            // Tracking success : Draw the tracked object
+            cv::rectangle(curFrame, boundingBox, Scalar(255, 0, 0), 2, 1);
+        }
+        // Display tracker type on frame
+        putText(curFrame, trackerType + " Tracker", Point(100, 20), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(50, 170, 50), 2);
+        // Display FPS on frame
+        putText(curFrame, "FPS : " + to_string(int(fps)), Point(100, 50), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(50, 170, 50), 2);
+        // Display frame.
+		imshow("Tracking", curFrame);
+        cout << "----------displayTracking end -----------" << endl;
     }
-    else
-    {
-        // Tracking failure detected. 
-        
-    }
 
-    // Display tracker type on frame 展示检测算法类型
-    putText(curFrame, trackerType + " Tracker", Point(100, 20), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(50, 170, 50), 2);
+    // Tracking failure will not update
+    std_msgs::UInt16MultiArray targetBox;
 
-    // Display FPS on frame 表示FPS
-    putText(curFrame, "FPS : " + to_string(int(fps)), Point(100, 50), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(50, 170, 50), 2);
+    targetBox.layout.dim.push_back(std_msgs::MultiArrayDimension());
+    targetBox.layout.dim[0].size = 4;
+    targetBox.layout.dim[0].stride = 1;
+    targetBox.layout.dim[0].label = "box";
 
-    target_pub.publish(targetPoint);
+    targetBox.data.resize(4);
+    targetBox.data[0] = boundingBox[0];
+    targetBox.data[1] = boundingBox[1];
+    targetBox.data[2] = boundingBox[2];
+    targetBox.data[3] = boundingBox[3];
+
+    target_pub.publish(targetBox);
+    cout << "-----trackingTarget bagin -----------" << endl;
     return;
 }
 
