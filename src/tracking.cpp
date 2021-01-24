@@ -10,8 +10,11 @@
 #include <mav_msgs/conversions.h>
 #include <mav_msgs/default_topics.h>
 #include <trajectory_msgs/MultiDOFJointTrajectory.h>
-#include "std_msgs/UInt16MultiArray.h"
-#include "std_msgs/MultiArrayDimension.h"
+#include <std_msgs/UInt16MultiArray.h>
+#include <std_msgs/MultiArrayDimension.h>
+// #include <sensor_msgs/Image.h>
+#include <cv_bridge/cv_bridge.h>//将ROS下的sensor_msgs/Image消息类型转化成cv::Mat。
+#include<sensor_msgs/image_encodings.h>//头文件sensor_msgs/Image是ROS下的图像的类型，这个头文件中包含对图像进行编码的函数
 
 // #include "pch.h"
 #include <opencv2/opencv.hpp>
@@ -35,7 +38,7 @@ bool flag_gps_initialized_OK = false;
 int flag_tasks_OK = 0;
 Eigen::Vector3d home(0.0, 0.0, 0.0);
 std::pair<int, int> targetPoint({0, 0});
-string trackerType = "KCF"; //可选择"BOOSTING", "MIL", "KCF", "TLD","MEDIANFLOW", "MOSSE", "CSRT" 
+string trackerType = "KCF"; //可选择"BOOSTING", "MIL", "KCF", "TLD","MEDIANFLOW", "MOSSE", "GOTURN" 
 cv::Ptr<Tracker> tracker;
 
 void updateUavPosition(const geometry_msgs::PointStamped&);
@@ -43,6 +46,7 @@ double getDistanceToTarget(const Eigen::Vector3d&);
 bool reachTargetPosition(const Eigen::Vector3d&, float);
 bool linearSmoothingNavigationTask(const Eigen::Vector3d&);
 void trackingTarget(const sensor_msgs::Image&);
+void updateFrame(const sensor_msgs::Image&);
 
 
 bool isFirstFrame = true;
@@ -70,21 +74,23 @@ int main(int argc, char** argv) {
     target_pub = nh.advertise<std_msgs::UInt16MultiArray >("/uav_tracking/target_point", 10);
 
     
-    if (trackerType == "BOOSTING")
+    if (trackerType == "BOOSTING"){
         tracker = TrackerBoosting::create();
-    else if (trackerType == "MIL")
+    }else if (trackerType == "MIL"){
         tracker = TrackerMIL::create();
-    else if (trackerType == "KCF")
+    }else if (trackerType == "KCF"){
         tracker = TrackerKCF::create();
-    else if (trackerType == "TLD")
+    }else if (trackerType == "TLD"){
         tracker = TrackerTLD::create();
-    else if (trackerType == "MEDIANFLOW")
+    }else if (trackerType == "MEDIANFLOW"){
         tracker = TrackerMedianFlow::create();
-    else if (trackerType == "MOSSE")
+    }else if (trackerType == "MOSSE"){
         tracker = TrackerMOSSE::create();
-    else (trackerType == "CSRT")
-        tracker = TrackerCSRT::create();
-
+    }else if(trackerType == "GOTURN"){
+        tracker = TrackerGOTURN::create();
+    }else{
+        ROS_INFO("wrong trackerType...");
+    }
 
     ros::Rate loop_rate(10);
     while (ros::ok())
