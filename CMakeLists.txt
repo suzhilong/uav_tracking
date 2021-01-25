@@ -50,3 +50,6 @@ target_link_libraries(video_record ${catkin_LIBRARIES})
 add_executable(img_tracking src/img_tracking.cpp)
 add_dependencies(img_tracking ${catkin_EXPORTED_TARGETS} ${${PROJECT_NAME}_EXPORTED_TARGETS})
 target_link_libraries(img_tracking ${catkin_LIBRARIES} ${OpenCV_LIBS})
+
+add_executable(uav_tracking src/uav_tracking.cpp)
+target_link_libraries(uav_tracking ${catkin_LIBRARIES})
