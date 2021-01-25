@@ -1,8 +1,6 @@
 #include <iostream>
 #include <vector>
 #include <chrono>
-// #include <thread>
-// #include <Eigen/Core>
 
 #include <ros/ros.h>
 #include <geometry_msgs/PointStamped.h>
@@ -16,7 +14,6 @@
 #include <cv_bridge/cv_bridge.h> //将ROS下的sensor_msgs/Image消息类型转化成cv::Mat。
 #include<image_transport/image_transport.h> //image_transport 头文件用来在ROS系统中的话题上发布和订阅图象消息
 
-// #include "pch.h"
 //OpenCV2标准头文件 
 #include <opencv2/opencv.hpp>
 #include <opencv2/tracking.hpp>
@@ -28,9 +25,9 @@
 using namespace cv;
 using namespace std;
 
-ros::Subscriber video_left_sub;  // /vi_sensor/left/image_raw
-ros::Subscriber video_right_sub; // /vi_sensor/right/image_raw
-ros::Publisher target_pub;
+// ros::Subscriber video_left_sub;  // /vi_sensor/left/image_raw
+// ros::Subscriber video_right_sub; // /vi_sensor/right/image_raw
+ros::Publisher target_pub;//发布跟踪结果
 // image_transport::Subscriber image_sub; //定义ROS图象接收器 ,订阅主题的变量
 // image_transport::Publisher image_pub; //定义ROS图象发布器 ,发布主题的变量
 
