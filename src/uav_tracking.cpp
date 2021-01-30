@@ -77,13 +77,15 @@ vector<int> getBoxMid(int x, int y, int w, int h)
     return boxMid;
 }
 
+
 /*
 得到目标点：
 通过比较 boxMid 和 Mid，得到应该往current_position的哪边走
 */
-Eigen::Vector3d getTarget(const vector<int>&　boxMid)
+Eigen::Vector3d getTarget(const vector<int>& boxMid)
 {
-
+    Eigen::Vector3d target3d(0,0,0);
+    return target3d;
 }
 
 
