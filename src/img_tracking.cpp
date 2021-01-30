@@ -42,12 +42,12 @@ y; //左上角的y坐标
 width; //矩形的宽度
 height; //矩形的高度
 */
-cv::Rect2d boundingBox(0, 0, 0, 0);
+cv::Rect2d boundingBox(350, 200, 100, 80);
 string trackerType = "KCF"; //可选择"BOOSTING", "MIL", "KCF", "TLD","MEDIANFLOW", "MOSSE", "GOTURN" 
 cv::Ptr<Tracker> tracker;
 bool isFirstFrame = true;
-bool DisplayTracking = false; //是否可视化跟踪
-bool save = false;//是否保存第一帧来选定目标
+bool DisplayTracking = false; //是否可视化跟踪，true的话可视化框容易卡死
+bool save = false;//是否保存第一帧来观察选定目标
 
 int main(int argc, char** argv) {
     if (trackerType == "BOOSTING"){
@@ -168,11 +168,13 @@ void trackingTarget(cv::Mat curFrame)
     {
         // 如果第一帧，初始化
         cout << "----initialization" << endl;
-        // 初始化检测框的坐标
-        boundingBox.x = 350;
-        boundingBox.y = 200;
-        boundingBox.width = 100;
-        boundingBox.height = 80;
+        // 1. 初始化检测框的坐标
+        // boundingBox.x = 350;
+        // boundingBox.y = 200;
+        // boundingBox.width = 100;
+        // boundingBox.height = 80;
+        // 2. 手动框选
+        boundingBox = selectROI(curFrame, false);
 
         if (DisplayTracking)
         {
@@ -186,7 +188,7 @@ void trackingTarget(cv::Mat curFrame)
 
         isFirstFrame = false;
     }else{
-        cout << "----not initialization" << endl;
+        cout << "----already initialization" << endl;
     }
 
     // Start timer
@@ -208,6 +210,11 @@ void trackingTarget(cv::Mat curFrame)
             // Tracking success : Draw the tracked object
             cv::rectangle(curFrame, boundingBox, Scalar(255, 0, 0), 2, 1);
         }
+        else
+		{
+			// Tracking failure detected.
+			cv::putText(curFrame, "Tracking failure detected", Point(100, 80), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(0, 0, 255), 2);
+		}
         // Display tracker type on frame
         putText(curFrame, trackerType + " Tracker", Point(100, 20), FONT_HERSHEY_SIMPLEX, 0.75, Scalar(50, 170, 50), 2);
         // Display FPS on frame
@@ -227,7 +234,7 @@ void trackingTarget(cv::Mat curFrame)
         cout << "-----tracking false" << endl;
     }
 
-    // Tracking failure will not update
+    // Tracking failure will use old bbox to update
     std_msgs::UInt16MultiArray targetBox;  //x,y,width,height
 
     targetBox.layout.dim.push_back(std_msgs::MultiArrayDimension());
