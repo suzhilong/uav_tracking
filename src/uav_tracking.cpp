@@ -25,13 +25,14 @@ geometry_msgs::PointStamped current_position;
 float linear_smoothing_navigation_step = 1;
 int flag_tasks_OK = 0;
 vector<int> Mid(375,240);//图像中心点
+int Area = 100*80;//ROI应该占有的像素面积
 
 void flyToTarget(const std_msgs::UInt16MultiArray&);
 void updateUavPosition(const geometry_msgs::PointStamped&);
 double getDistanceToTarget(const Eigen::Vector3d&);
 bool reachTargetPosition(const Eigen::Vector3d&, float);
 bool linearSmoothingNavigationTask(const Eigen::Vector3d&);
-vector<int> getBoxMid(int, int, int, int);
+vector<int> getBoxCenter(int, int, int, int);
 Eigen::Vector3d getTarget(const vector<int>&);
 
 
@@ -67,24 +68,40 @@ int main(int argc, char** argv) {
 
 
 /*
-得到中心点
+得到中心点和框面积
 */
-vector<int> getBoxMid(int x, int y, int w, int h)
+vector<int> getBoxCenter(int x, int y, int w, int h)
 {
-    vector<int> boxMid(0, 0);
-    boxMid[0] = x + w/2;
-    boxMid[1] = y + h/2;
-    return boxMid;
+    vector<int> boxCenterNArea;
+    boxCenterNArea[0] = x + w/2;
+    boxCenterNArea[1] = y + h/2;
+    boxCenterNArea[2] = w*h;
+    return boxCenterNArea;
 }
 
 
 /*
 得到目标点：
-通过比较 boxMid 和 Mid，得到应该往current_position的哪边走
+通过比较 boxCenter 和 Mid，得到应该往current_position的哪边走
+
+位置更新算法：移动到物体成像在图像中心
+设跟踪距离为d，即物体到相机感光器件远点的距离
+焦距为ｆ
+在x轴上：d/f=X/x，　X为需要向右移动的距离，x为物体图像中心像素距离整个图片中心像素的距离
+y轴同x轴
+z轴需要根据物体成像大小比例来计算：成像大了向后，小了向前
 */
-Eigen::Vector3d getTarget(const vector<int>& boxMid)
+Eigen::Vector3d getTarget(const vector<int>& boxCenterNArea)
 {
-    Eigen::Vector3d target3d(0,0,0);
+    int pixDistX = boxCenterNArea[0] - Mid[0];
+    int pixDistY = boxCenterNArea[1] - Mid[1];
+    int areaDistZ = boxCenterNArea[2] - Area;
+    float positionUpdateX = 0, positionUpdateY = 0, positionUpdateZ = 0;
+    //随便取值测试
+    positionUpdateX = pixDistX * 0.05;
+    positionUpdateY = pixDistY * 0.05;
+    positionUpdateZ = (float)areaDistZ/Area * 1.0;
+    Eigen::Vector3d target3d(current_position.point.x+positionUpdateX, current_position.point.y+positionUpdateY,current_position.point.z+positionUpdateZ);
     return target3d;
 }
 
@@ -104,9 +121,9 @@ Return:
 void flyToTarget(const std_msgs::UInt16MultiArray& targetBox)
 {
     //把target转化为飞行目标点
-    vector<int> boxMid = getBoxMid(targetBox.data[0],targetBox.data[1],targetBox.data[2],targetBox.data[3]);
+    vector<int> boxCenterNArea = getBoxCenter(targetBox.data[0],targetBox.data[1],targetBox.data[2],targetBox.data[3]);
 
-    Eigen::Vector3d target = getTarget(boxMid);
+    Eigen::Vector3d target = getTarget(boxCenterNArea);
 
     bool ok = linearSmoothingNavigationTask(target);
     if(!ok)
